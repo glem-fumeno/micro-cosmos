@@ -3,3 +3,6 @@ use bevy::prelude::*;
 pub struct Enemy {
     pub velocity: f32,
 }
+
+#[derive(Component, Deref, DerefMut)]
+pub struct SpawnTimer(pub Timer);

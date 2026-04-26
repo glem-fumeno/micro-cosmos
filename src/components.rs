@@ -37,3 +37,5 @@ impl Collision {
         Self { radius }
     }
 }
+#[derive(Component)]
+pub struct FPSCounter;

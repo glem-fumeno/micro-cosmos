@@ -1,9 +1,40 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 
 use crate::{
-    components::LocalTransform, enemies::components::Enemy,
+    components::LocalTransform,
+    enemies::{
+        components::{Enemy, SpawnTimer},
+        entities::spawn_enemy,
+    },
     player::components::Player,
+    resources::{Rng, WindowState},
 };
+pub fn enemy_timer_spawn(
+    mut query: Query<&mut SpawnTimer>,
+    time: Res<Time>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    window: Res<WindowState>,
+    mut rng: ResMut<Rng>,
+) {
+    for mut timer in &mut query {
+        if timer.tick(time.delta()).just_finished() {
+            let last_duration = timer.0.duration().as_secs_f64();
+            timer.set_duration(Duration::from_secs_f64(last_duration * 0.99));
+            timer.reset();
+            spawn_enemy(
+                &mut commands,
+                &mut meshes,
+                &mut materials,
+                &window,
+                &mut rng,
+            );
+        }
+    }
+}
 
 pub fn enemy_follow_player(
     query_player: Query<&LocalTransform, With<Player>>,

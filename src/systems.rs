@@ -1,7 +1,11 @@
-use bevy::prelude::*;
+use bevy::{
+    diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin},
+    prelude::*,
+};
 
 use crate::{
-    components::{Collision, LocalTransform},
+    components::{Collision, FPSCounter, LocalTransform},
+    enemies::components::SpawnTimer,
     math::get_collision_velocities,
     player::entities::spawn_player,
     resources::WindowState,
@@ -25,6 +29,17 @@ pub fn setup(
         LocalTransform::from_xyz(0., 0., -1.),
     ));
     spawn_player(&mut commands, &mut meshes, &mut materials, 50., 1., 0.9);
+    commands.spawn((SpawnTimer(Timer::from_seconds(1., TimerMode::Once)),));
+    commands.spawn((
+        Text::new(String::new()),
+        Node {
+            position_type: PositionType::Absolute,
+            top: px(12),
+            left: px(12),
+            ..default()
+        },
+        FPSCounter,
+    ));
 }
 pub fn handle_window(
     mut window_state: ResMut<WindowState>,
@@ -104,20 +119,32 @@ pub fn handle_edge_collision(
 ) {
     for (mut transform, collision) in query {
         if transform.position.x + collision.radius > window.width / 2. {
-            transform.velocity.x = -transform.velocity.x;
+            transform.velocity.x = -transform.velocity.x.abs();
             transform.position.x = window.width / 2. - collision.radius;
         }
         if transform.position.x - collision.radius < -window.width / 2. {
-            transform.velocity.x = -transform.velocity.x;
+            transform.velocity.x = transform.velocity.x.abs();
             transform.position.x = -window.width / 2. + collision.radius;
         }
         if transform.position.y + collision.radius > window.height / 2. {
-            transform.velocity.y = -transform.velocity.y;
+            transform.velocity.y = -transform.velocity.y.abs();
             transform.position.y = window.height / 2. - collision.radius;
         }
         if transform.position.y - collision.radius < -window.height / 2. {
-            transform.velocity.y = -transform.velocity.y;
+            transform.velocity.y = transform.velocity.y.abs();
             transform.position.y = -window.height / 2. + collision.radius;
+        }
+    }
+}
+pub fn handle_fps_count(
+    mut query: Query<&mut Text, With<FPSCounter>>,
+    diagnostics: Res<DiagnosticsStore>,
+) {
+    if let Some(diagnostic) = diagnostics.get(&FrameTimeDiagnosticsPlugin::FPS)
+        && let Some(fps) = diagnostic.smoothed()
+    {
+        for mut text in &mut query {
+            text.0 = format!("FPS: {}", fps as i32).into()
         }
     }
 }

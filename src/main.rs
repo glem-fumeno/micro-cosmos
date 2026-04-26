@@ -1,14 +1,19 @@
-use bevy::{input::common_conditions::input_just_pressed, prelude::*};
+use bevy::{
+    diagnostic::FrameTimeDiagnosticsPlugin,
+    prelude::*,
+    window::{PresentMode, WindowMode},
+};
 
 use crate::{
-    enemies::entities::spawn_enemy,
+    enemies::systems::enemy_timer_spawn,
     player::systems::{
         player_attack, player_cooldown, player_move, player_rotate,
         player_transform_mesh,
     },
     resources::{Rng, WindowState},
     systems::{
-        advance_local_transform, handle_collision, handle_edge_collision, handle_window, local_to_global_transform, setup
+        advance_local_transform, handle_collision, handle_edge_collision,
+        handle_fps_count, handle_window, local_to_global_transform, setup,
     },
 };
 
@@ -23,16 +28,20 @@ fn main() {
     App::new()
         .insert_resource(WindowState::default())
         .insert_resource(Rng::default())
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                // mode: WindowMode::BorderlessFullscreen(
-                //     MonitorSelection::Primary,
-                // ),
-                resizable: true,
+        .add_plugins((
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    mode: WindowMode::BorderlessFullscreen(
+                        MonitorSelection::Primary,
+                    ),
+                    present_mode: PresentMode::AutoNoVsync,
+                    resizable: true,
+                    ..default()
+                }),
                 ..default()
             }),
-            ..default()
-        }))
+            FrameTimeDiagnosticsPlugin::default(),
+        ))
         .add_systems(Startup, setup)
         .add_systems(Update, handle_window)
         .add_systems(Update, advance_local_transform)
@@ -42,12 +51,9 @@ fn main() {
         .add_systems(Update, player_cooldown)
         .add_systems(Update, local_to_global_transform)
         .add_systems(Update, player_transform_mesh)
-        .add_systems(
-            Update,
-            spawn_enemy.run_if(input_just_pressed(KeyCode::Space)),
-        )
-        // .add_systems(Update, enemy_follow_player)
+        .add_systems(Update, enemy_timer_spawn)
         .add_systems(Update, handle_collision)
         .add_systems(Update, handle_edge_collision)
+        .add_systems(Update, handle_fps_count)
         .run();
 }

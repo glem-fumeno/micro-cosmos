@@ -7,11 +7,11 @@ use crate::{
 };
 
 pub fn spawn_enemy(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    window: Res<WindowState>,
-    mut rng: ResMut<Rng>,
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<ColorMaterial>,
+    window: &WindowState,
+    rng: &mut Rng,
 ) {
     let mesh = meshes.add(Circle::new(2.0));
     let color = Color::hsl(0. as f32 as f32, 0.75, 0.7);
@@ -25,7 +25,7 @@ pub fn spawn_enemy(
             rng.random_to(window.height) - window.height / 2.,
             2.,
         )
-        .with_velocity(rng.random_to(10.) - 5., rng.random_to(10.) - 5.),
+        .with_velocity(rng.random_to(20.) - 10., rng.random_to(20.) - 10.),
         Transform::default(),
         Collision::new(2.),
     ));
