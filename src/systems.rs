@@ -1,10 +1,13 @@
+use std::time::Duration;
+
 use bevy::{
     diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin},
+    platform::collections::HashMap,
     prelude::*,
 };
 
 use crate::{
-    components::{Collision, FPSCounter, LocalTransform},
+    components::{Collision, FPSCounter, LocalTransform, TTL},
     enemies::components::SpawnTimer,
     math::get_collision_velocities,
     player::entities::spawn_player,
@@ -85,32 +88,69 @@ pub fn advance_local_transform(
     }
 }
 pub fn handle_collision(
-    mut query: Query<(&mut LocalTransform, &mut Collision)>,
+    mut query: Query<(Entity, &mut LocalTransform, &mut Collision)>,
+    window_state: Res<WindowState>,
 ) {
-    let mut combinations = query.iter_combinations_mut();
-    while let Some(
-        [
-            (mut transform_1, collision_1),
-            (mut transform_2, collision_2),
-        ],
-    ) = combinations.fetch_next()
-    {
-        let d2 = transform_1.position.distance_squared(transform_2.position);
-        if d2 > (collision_1.radius + collision_2.radius).powi(2) {
-            continue;
+    let mut grid: HashMap<
+        (i32, i32),
+        Vec<(Entity, LocalTransform, Collision)>,
+    > = HashMap::new();
+    for (entity, transform, collision) in &query {
+        let sector_x = transform.position.x as i32 / window_state.sector_size;
+        let sector_y = transform.position.y as i32 / window_state.sector_size;
+        grid.entry((sector_x, sector_y))
+            .and_modify(|v| v.push((entity, *transform, *collision)))
+            .or_insert(vec![(entity, *transform, *collision)]);
+    }
+    let mut updated_entities: HashMap<Entity, (Vec2, Vec2)> = HashMap::new();
+    for (sx, sy) in grid.keys() {
+        let mut entities: Vec<(Entity, LocalTransform, Collision)> = vec![];
+        entities.extend(grid.get(&(sx - 1, sy - 1)).unwrap_or(&vec![]));
+        entities.extend(grid.get(&(sx - 0, sy - 1)).unwrap_or(&vec![]));
+        entities.extend(grid.get(&(sx + 1, sy - 1)).unwrap_or(&vec![]));
+        entities.extend(grid.get(&(sx - 1, sy - 0)).unwrap_or(&vec![]));
+        entities.extend(grid.get(&(sx - 0, sy - 0)).unwrap_or(&vec![]));
+        entities.extend(grid.get(&(sx + 1, sy - 0)).unwrap_or(&vec![]));
+        entities.extend(grid.get(&(sx - 1, sy + 1)).unwrap_or(&vec![]));
+        entities.extend(grid.get(&(sx - 0, sy + 1)).unwrap_or(&vec![]));
+        entities.extend(grid.get(&(sx + 1, sy + 1)).unwrap_or(&vec![]));
+        for (i, (entity_1, transform_1, collision_1)) in
+            entities.iter().enumerate()
+        {
+            let f1 = (transform_1.velocity, transform_1.position);
+            let (v1, p1) = updated_entities.get(entity_1).unwrap_or(&f1);
+            let (mut v1, mut p1) = (*v1, *p1);
+            let r1 = collision_1.radius;
+
+            for (entity_2, transform_2, collision_2) in
+                entities.iter().skip(i + 1)
+            {
+                if !collision_2.layer.collides_with(collision_1.layer) {
+                    continue;
+                }
+                let f2 = (transform_2.velocity, transform_2.position);
+                let (v2, p2) = updated_entities.get(entity_2).unwrap_or(&f2);
+                let (mut v2, mut p2) = (*v2, *p2);
+                let r2 = collision_2.radius;
+
+                if p1.distance_squared(p2) > (r1 + r2) * (r1 + r2) {
+                    continue;
+                }
+                let dp = p2 - p1;
+                (v1, v2) =
+                    get_collision_velocities(v1, v2, r1, r2, dp.to_angle());
+                let nudge = dp.normalize() * (p1.distance(p2) - r1 - r2);
+                (p1, p2) = (p1 + nudge / 2., p2 - nudge / 2.);
+                updated_entities.insert(*entity_2, (v2, p2));
+            }
+            updated_entities.insert(*entity_1, (v1, p1));
         }
-        let vd = transform_2.position.xy() - transform_1.position.xy();
-        let (v1, v2) = get_collision_velocities(
-            transform_1.velocity,
-            transform_2.velocity,
-            vd.to_angle(),
-        );
-        transform_1.velocity = v1;
-        transform_2.velocity = v2;
-        let nudge = vd.normalize()
-            * (d2.sqrt() - collision_1.radius - collision_2.radius);
-        transform_1.position += nudge / 2.;
-        transform_2.position -= nudge / 2.;
+    }
+    for (entity, (velocity, position)) in updated_entities {
+        if let Ok((_, mut transform, _)) = query.get_mut(entity) {
+            transform.velocity = velocity;
+            transform.position = position;
+        }
     }
 }
 pub fn handle_edge_collision(
@@ -145,6 +185,20 @@ pub fn handle_fps_count(
     {
         for mut text in &mut query {
             text.0 = format!("FPS: {}", fps as i32).into()
+        }
+    }
+}
+pub fn handle_ttl(
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut TTL)>,
+    time: Res<Time>,
+) {
+    for (entity, mut timer) in &mut query {
+        if timer.tick(time.delta()).just_finished() {
+            let last_duration = timer.0.duration().as_secs_f64();
+            timer.set_duration(Duration::from_secs_f64(last_duration * 0.99));
+            timer.reset();
+            commands.entity(entity).despawn();
         }
     }
 }

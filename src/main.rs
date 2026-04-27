@@ -12,8 +12,7 @@ use crate::{
     },
     resources::{Rng, WindowState},
     systems::{
-        advance_local_transform, handle_collision, handle_edge_collision,
-        handle_fps_count, handle_window, local_to_global_transform, setup,
+        advance_local_transform, handle_collision, handle_edge_collision, handle_fps_count, handle_ttl, handle_window, local_to_global_transform, setup
     },
 };
 
@@ -23,6 +22,7 @@ pub mod math;
 pub mod player;
 pub mod resources;
 pub mod systems;
+pub mod projectiles;
 
 fn main() {
     App::new()
@@ -49,11 +49,16 @@ fn main() {
         .add_systems(Update, player_rotate)
         .add_systems(Update, player_attack)
         .add_systems(Update, player_cooldown)
-        .add_systems(Update, local_to_global_transform)
-        .add_systems(Update, player_transform_mesh)
         .add_systems(Update, enemy_timer_spawn)
+        // .add_systems(
+        //     Update,
+        //     spawn_bulk.run_if(input_just_pressed(KeyCode::Space)),
+        // )
         .add_systems(Update, handle_collision)
         .add_systems(Update, handle_edge_collision)
         .add_systems(Update, handle_fps_count)
+        .add_systems(Update, handle_ttl)
+        .add_systems(PostUpdate, local_to_global_transform)
+        .add_systems(PostUpdate, player_transform_mesh)
         .run();
 }

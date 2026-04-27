@@ -1,10 +1,36 @@
 use bevy::prelude::*;
 
 use crate::{
-    components::{Collision, LocalTransform},
+    components::{Collision, CollisionLayer, LocalTransform},
     enemies::components::Enemy,
     resources::{Rng, WindowState},
 };
+pub fn spawn_bulk(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    window: Res<WindowState>,
+    mut rng: ResMut<Rng>,
+) {
+    let mesh = meshes.add(Circle::new(2.0));
+    let color = Color::hsl(0. as f32 as f32, 0.75, 0.7);
+    let material = materials.add(color);
+    for _ in 0..1000 {
+        commands.spawn((
+            Enemy { velocity: 40. },
+            Mesh2d(mesh.clone()),
+            MeshMaterial2d(material.clone()),
+            LocalTransform::from_xyz(
+                rng.random_to(window.width) - window.width / 2.,
+                rng.random_to(window.height) - window.height / 2.,
+                2.,
+            )
+            .with_velocity(rng.random_to(20.) - 10., rng.random_to(20.) - 10.),
+            Transform::default(),
+            Collision::new(2., CollisionLayer::Enemy),
+        ));
+    }
+}
 
 pub fn spawn_enemy(
     commands: &mut Commands,
@@ -27,6 +53,6 @@ pub fn spawn_enemy(
         )
         .with_velocity(rng.random_to(20.) - 10., rng.random_to(20.) - 10.),
         Transform::default(),
-        Collision::new(2.),
+        Collision::new(2., CollisionLayer::Enemy),
     ));
 }

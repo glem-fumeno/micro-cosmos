@@ -3,7 +3,7 @@ use std::f32::consts::TAU;
 use bevy::prelude::*;
 
 use crate::{
-    components::{Collision, LocalTransform},
+    components::{Collision, CollisionLayer, LocalTransform},
     player::components::{Player, PlayerMesh},
 };
 
@@ -16,7 +16,7 @@ pub fn spawn_player(
     attack_cooldown: f32,
 ) {
     let cone = meshes.add(CircularSector::new(50.0, TAU / 12.));
-    let player = meshes.add(Circle::new(5.0));
+    let player = meshes.add(Circle::new(4.0));
     let color = Color::hsl(60. as f32 as f32, 0.15, 0.7);
     let opaque_material = materials.add(color);
     let transparent_material = materials.add(color.with_alpha(0.3));
@@ -50,6 +50,8 @@ pub fn spawn_player(
             cooldown,
             attack_cooldown,
             current_cooldown: 0.,
+            projectiles: 8,
+            spread: TAU / 6.,
             mesh_entity,
             cooldown_entity,
             attack_entity,
@@ -58,6 +60,6 @@ pub fn spawn_player(
         LocalTransform::from_xyz(0., 0., 1.),
         Mesh2d(player.clone()),
         MeshMaterial2d(opaque_material.clone()),
-        Collision::new(5.),
+        Collision::new(4., CollisionLayer::Player),
     ));
 }

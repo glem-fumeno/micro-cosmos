@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use crate::{
     components::LocalTransform,
     player::components::{Player, PlayerMesh},
+    projectiles::entities::spawn_projectiles,
     resources::WindowState,
 };
 pub fn player_move(
@@ -43,15 +44,26 @@ pub fn player_rotate(
 }
 
 pub fn player_attack(
-    mut query: Query<&mut Player>,
+    mut query: Query<(&LocalTransform, &mut Player)>,
     input: Res<ButtonInput<MouseButton>>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     if !input.pressed(MouseButton::Left) {
         return;
     }
-    for mut player in &mut query {
+    for (transform, mut player) in &mut query {
         if player.current_cooldown <= 0. {
             player.current_cooldown = player.cooldown;
+            spawn_projectiles(
+                &mut commands,
+                &mut meshes,
+                &mut materials,
+                *transform,
+                player.projectiles,
+                player.spread,
+            );
         }
     }
 }

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Debug)]
 pub struct LocalTransform {
     pub angle: f32,
     pub scale: Vec2,
@@ -26,16 +26,47 @@ impl LocalTransform {
         self
     }
 }
+#[derive(Clone, Copy, Debug)]
+pub enum CollisionLayer {
+    Player,
+    Enemy,
+    Projectile,
+}
+impl CollisionLayer {
+    pub fn collides_with(&self, other: Self) -> bool {
+        match self {
+            Self::Player => match other {
+                Self::Player => true,
+                Self::Enemy => true,
+                Self::Projectile => false,
+            },
+            Self::Enemy => match other {
+                Self::Player => true,
+                Self::Enemy => true,
+                Self::Projectile => true,
+            },
+            Self::Projectile => match other {
+                Self::Projectile => false,
+                Self::Player => false,
+                Self::Enemy => true,
+            },
+        }
+    }
+}
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Debug)]
 pub struct Collision {
     pub radius: f32,
+    pub layer: CollisionLayer,
 }
 
 impl Collision {
-    pub fn new(radius: f32) -> Self {
-        Self { radius }
+    pub fn new(radius: f32, layer: CollisionLayer) -> Self {
+        Self { radius, layer }
     }
 }
 #[derive(Component)]
 pub struct FPSCounter;
+
+#[derive(Component, Deref, DerefMut)]
+pub struct TTL(pub Timer);

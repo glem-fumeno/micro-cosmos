@@ -6,6 +6,7 @@ pub struct WindowState {
     pub width: f32,
     pub height: f32,
     pub scale: f32,
+    pub sector_size: i32,
     pub cursor: Vec2,
 }
 
@@ -15,6 +16,7 @@ impl Default for WindowState {
             width: 256.,
             height: 144.,
             scale: 1.,
+            sector_size: 8,
             cursor: Vec2::ZERO,
         }
     }

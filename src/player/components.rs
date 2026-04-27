@@ -9,6 +9,8 @@ pub struct Player {
     pub mesh_entity: Entity,
     pub cooldown_entity: Entity,
     pub attack_entity: Entity,
+    pub projectiles: i32,
+    pub spread: f32,
 }
 
 #[derive(Component)]
