@@ -29,7 +29,7 @@ pub fn spawn_projectiles(
             MeshMaterial2d(material.clone()),
             transform.with_velocity(v.x, v.y),
             Transform::default(),
-            Collision::new(1., CollisionLayer::Projectile),
+            Collision::new(1., CollisionLayer::Projectile, 10.),
         ));
     }
 }

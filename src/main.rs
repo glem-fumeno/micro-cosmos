@@ -1,11 +1,9 @@
 use bevy::{
-    diagnostic::FrameTimeDiagnosticsPlugin,
-    prelude::*,
-    window::{PresentMode, WindowMode},
+    diagnostic::FrameTimeDiagnosticsPlugin, input::common_conditions::input_just_pressed, prelude::*, window::{PresentMode, WindowMode}
 };
 
 use crate::{
-    enemies::systems::enemy_timer_spawn,
+    enemies::{entities::spawn_bulk, systems::enemy_timer_spawn},
     player::systems::{
         player_attack, player_cooldown, player_move, player_rotate,
         player_transform_mesh,
@@ -49,11 +47,11 @@ fn main() {
         .add_systems(Update, player_rotate)
         .add_systems(Update, player_attack)
         .add_systems(Update, player_cooldown)
-        .add_systems(Update, enemy_timer_spawn)
-        // .add_systems(
-        //     Update,
-        //     spawn_bulk.run_if(input_just_pressed(KeyCode::Space)),
-        // )
+        // .add_systems(Update, enemy_timer_spawn)
+        .add_systems(
+            Update,
+            spawn_bulk.run_if(input_just_pressed(KeyCode::Space)),
+        )
         .add_systems(Update, handle_collision)
         .add_systems(Update, handle_edge_collision)
         .add_systems(Update, handle_fps_count)

@@ -27,7 +27,7 @@ pub fn spawn_bulk(
             )
             .with_velocity(rng.random_to(20.) - 10., rng.random_to(20.) - 10.),
             Transform::default(),
-            Collision::new(2., CollisionLayer::Enemy),
+            Collision::new(2., CollisionLayer::Enemy, 100.),
         ));
     }
 }
@@ -53,6 +53,6 @@ pub fn spawn_enemy(
         )
         .with_velocity(rng.random_to(20.) - 10., rng.random_to(20.) - 10.),
         Transform::default(),
-        Collision::new(2., CollisionLayer::Enemy),
+        Collision::new(2., CollisionLayer::Enemy, 100.),
     ));
 }

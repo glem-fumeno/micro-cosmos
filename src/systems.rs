@@ -120,7 +120,7 @@ pub fn handle_collision(
             let f1 = (transform_1.velocity, transform_1.position);
             let (v1, p1) = updated_entities.get(entity_1).unwrap_or(&f1);
             let (mut v1, mut p1) = (*v1, *p1);
-            let r1 = collision_1.radius;
+            let (r1, m1) = (collision_1.radius, collision_1.mass);
 
             for (entity_2, transform_2, collision_2) in
                 entities.iter().skip(i + 1)
@@ -131,14 +131,14 @@ pub fn handle_collision(
                 let f2 = (transform_2.velocity, transform_2.position);
                 let (v2, p2) = updated_entities.get(entity_2).unwrap_or(&f2);
                 let (mut v2, mut p2) = (*v2, *p2);
-                let r2 = collision_2.radius;
+                let (r2, m2) = (collision_2.radius, collision_2.mass);
 
                 if p1.distance_squared(p2) > (r1 + r2) * (r1 + r2) {
                     continue;
                 }
                 let dp = p2 - p1;
                 (v1, v2) =
-                    get_collision_velocities(v1, v2, r1, r2, dp.to_angle());
+                    get_collision_velocities(v1, v2, m1, m2, dp.to_angle());
                 let nudge = dp.normalize() * (p1.distance(p2) - r1 - r2);
                 (p1, p2) = (p1 + nudge / 2., p2 - nudge / 2.);
                 updated_entities.insert(*entity_2, (v2, p2));

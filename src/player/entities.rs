@@ -60,6 +60,6 @@ pub fn spawn_player(
         LocalTransform::from_xyz(0., 0., 1.),
         Mesh2d(player.clone()),
         MeshMaterial2d(opaque_material.clone()),
-        Collision::new(4., CollisionLayer::Player),
+        Collision::new(4., CollisionLayer::Player, 400.),
     ));
 }

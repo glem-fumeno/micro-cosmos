@@ -58,11 +58,16 @@ impl CollisionLayer {
 pub struct Collision {
     pub radius: f32,
     pub layer: CollisionLayer,
+    pub mass: f32,
 }
 
 impl Collision {
-    pub fn new(radius: f32, layer: CollisionLayer) -> Self {
-        Self { radius, layer }
+    pub fn new(radius: f32, layer: CollisionLayer, mass: f32) -> Self {
+        Self {
+            radius,
+            layer,
+            mass,
+        }
     }
 }
 #[derive(Component)]
