@@ -59,6 +59,7 @@ pub struct Collision {
     pub radius: f32,
     pub layer: CollisionLayer,
     pub mass: f32,
+    pub energy: f32,
 }
 
 impl Collision {
@@ -67,6 +68,7 @@ impl Collision {
             radius,
             layer,
             mass,
+            energy: 0.0,
         }
     }
 }
@@ -75,3 +77,6 @@ pub struct FPSCounter;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct TTL(pub Timer);
+
+#[derive(Component)]
+pub struct EnergyDisplay;

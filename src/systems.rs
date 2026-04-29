@@ -7,8 +7,8 @@ use bevy::{
 };
 
 use crate::{
-    components::{Collision, FPSCounter, LocalTransform, TTL},
-    enemies::components::SpawnTimer,
+    components::{Collision, EnergyDisplay, FPSCounter, LocalTransform, TTL},
+    enemies::components::{Enemy, SpawnTimer},
     math::get_collision_velocities,
     player::entities::spawn_player,
     resources::WindowState,
@@ -42,6 +42,14 @@ pub fn setup(
             ..default()
         },
         FPSCounter,
+        children![(
+            Text::new(String::new()),
+            Node {
+                top: px(36),
+                ..default()
+            },
+            EnergyDisplay,
+        )],
     ));
 }
 pub fn handle_window(
@@ -102,7 +110,8 @@ pub fn handle_collision(
             .and_modify(|v| v.push((entity, *transform, *collision)))
             .or_insert(vec![(entity, *transform, *collision)]);
     }
-    let mut updated_entities: HashMap<Entity, (Vec2, Vec2)> = HashMap::new();
+    let mut updated_entities: HashMap<Entity, (Vec2, Vec2, f32)> =
+        HashMap::new();
     for (sx, sy) in grid.keys() {
         let mut entities: Vec<(Entity, LocalTransform, Collision)> = vec![];
         entities.extend(grid.get(&(sx - 1, sy - 1)).unwrap_or(&vec![]));
@@ -117,9 +126,13 @@ pub fn handle_collision(
         for (i, (entity_1, transform_1, collision_1)) in
             entities.iter().enumerate()
         {
-            let f1 = (transform_1.velocity, transform_1.position);
-            let (v1, p1) = updated_entities.get(entity_1).unwrap_or(&f1);
-            let (mut v1, mut p1) = (*v1, *p1);
+            let f1 = (
+                transform_1.velocity,
+                transform_1.position,
+                collision_1.energy,
+            );
+            let (v1, p1, e1) = updated_entities.get(entity_1).unwrap_or(&f1);
+            let (mut v1, mut p1, mut e1) = (*v1, *p1, *e1);
             let (r1, m1) = (collision_1.radius, collision_1.mass);
 
             for (entity_2, transform_2, collision_2) in
@@ -128,28 +141,38 @@ pub fn handle_collision(
                 if !collision_2.layer.collides_with(collision_1.layer) {
                     continue;
                 }
-                let f2 = (transform_2.velocity, transform_2.position);
-                let (v2, p2) = updated_entities.get(entity_2).unwrap_or(&f2);
-                let (mut v2, mut p2) = (*v2, *p2);
+                let f2 = (
+                    transform_2.velocity,
+                    transform_2.position,
+                    collision_1.energy,
+                );
+                let (v2, p2, e2) =
+                    updated_entities.get(entity_2).unwrap_or(&f2);
+                let (mut v2, mut p2, mut e2) = (*v2, *p2, *e2);
                 let (r2, m2) = (collision_2.radius, collision_2.mass);
 
                 if p1.distance_squared(p2) > (r1 + r2) * (r1 + r2) {
                     continue;
                 }
                 let dp = p2 - p1;
-                (v1, v2) =
+                let (nv1, nv2) =
                     get_collision_velocities(v1, v2, m1, m2, dp.to_angle());
+                e1 += (nv1 - v1).length_squared() * m1;
+                e2 += (nv2 - v2).length_squared() * m2;
+                v1 = nv1;
+                v2 = nv2;
                 let nudge = dp.normalize() * (p1.distance(p2) - r1 - r2);
                 (p1, p2) = (p1 + nudge / 2., p2 - nudge / 2.);
-                updated_entities.insert(*entity_2, (v2, p2));
+                updated_entities.insert(*entity_2, (v2, p2, e2));
             }
-            updated_entities.insert(*entity_1, (v1, p1));
+            updated_entities.insert(*entity_1, (v1, p1, e1));
         }
     }
-    for (entity, (velocity, position)) in updated_entities {
-        if let Ok((_, mut transform, _)) = query.get_mut(entity) {
+    for (entity, (velocity, position, energy)) in updated_entities {
+        if let Ok((_, mut transform, mut collision)) = query.get_mut(entity) {
             transform.velocity = velocity;
             transform.position = position;
+            collision.energy = energy
         }
     }
 }
@@ -157,23 +180,28 @@ pub fn handle_edge_collision(
     query: Query<(&mut LocalTransform, &mut Collision)>,
     window: Res<WindowState>,
 ) {
-    for (mut transform, collision) in query {
+    for (mut transform, mut collision) in query {
+        let mut new_velocity = transform.velocity;
         if transform.position.x + collision.radius > window.width / 2. {
-            transform.velocity.x = -transform.velocity.x.abs();
+            new_velocity.x = -new_velocity.x.abs();
             transform.position.x = window.width / 2. - collision.radius;
         }
         if transform.position.x - collision.radius < -window.width / 2. {
-            transform.velocity.x = transform.velocity.x.abs();
+            new_velocity.x = new_velocity.x.abs();
             transform.position.x = -window.width / 2. + collision.radius;
         }
         if transform.position.y + collision.radius > window.height / 2. {
-            transform.velocity.y = -transform.velocity.y.abs();
+            new_velocity.y = -new_velocity.y.abs();
             transform.position.y = window.height / 2. - collision.radius;
         }
         if transform.position.y - collision.radius < -window.height / 2. {
-            transform.velocity.y = transform.velocity.y.abs();
+            new_velocity.y = new_velocity.y.abs();
             transform.position.y = -window.height / 2. + collision.radius;
         }
+        collision.energy += (new_velocity - transform.velocity)
+            .length_squared()
+            * collision.mass;
+        transform.velocity = new_velocity
     }
 }
 pub fn handle_fps_count(
@@ -200,5 +228,17 @@ pub fn handle_ttl(
             timer.reset();
             commands.entity(entity).despawn();
         }
+    }
+}
+pub fn handle_energy(
+    mut query: Query<&Collision, With<Enemy>>,
+    mut display_query: Query<&mut Text, With<EnergyDisplay>>,
+) {
+    let mut sum = 0.;
+    for collision in &mut query {
+        sum += collision.energy;
+    }
+    for mut energy_display in &mut display_query {
+        energy_display.0 = format!("Energy: {}", (sum / 1_000_000.) as i32);
     }
 }
