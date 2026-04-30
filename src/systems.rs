@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::f32::consts::TAU;
 
 use bevy::{
     diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin},
@@ -7,31 +7,43 @@ use bevy::{
 };
 
 use crate::{
-    components::{Collision, EnergyDisplay, FPSCounter, LocalTransform, TTL},
+    components::{
+        Collision, CollisionLayer, CollisionTimer, EnergyDisplay, FPSCounter, Health, LocalTransform, TTL
+    },
     enemies::components::{Enemy, SpawnTimer},
     math::get_collision_velocities,
     player::entities::spawn_player,
-    resources::WindowState,
+    resources::{Materials, Meshes, Rng, Sounds, WindowState},
 };
 
 pub fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut materials_resource: ResMut<Materials>,
+    mut meshes_resource: ResMut<Meshes>,
     scale: Res<WindowState>,
 ) {
     commands.spawn(Camera2d);
+    materials_resource.init(&mut materials);
+    meshes_resource.init(&mut meshes);
 
     let background = meshes.add(Rectangle::new(scale.width, scale.height));
-    let background_color = Color::hsl(120. as f32 as f32, 0.05, 0.07);
 
     commands.spawn((
         Mesh2d(background),
-        MeshMaterial2d(materials.add(background_color)),
+        MeshMaterial2d(materials_resource.background()),
         Transform::default(),
         LocalTransform::from_xyz(0., 0., -1.),
     ));
-    spawn_player(&mut commands, &mut meshes, &mut materials, 50., 1., 0.9);
+    spawn_player(
+        &mut commands,
+        &mut meshes_resource,
+        &mut materials_resource,
+        50.,
+        0.5,
+        0.4,
+    );
     commands.spawn((SpawnTimer(Timer::from_seconds(1., TimerMode::Once)),));
     commands.spawn((
         Text::new(String::new()),
@@ -96,8 +108,15 @@ pub fn advance_local_transform(
     }
 }
 pub fn handle_collision(
+    mut commands: Commands,
     mut query: Query<(Entity, &mut LocalTransform, &mut Collision)>,
+    mut collision_query: Query<(
+        &mut CollisionTimer,
+        &mut MeshMaterial2d<ColorMaterial>,
+    )>,
     window_state: Res<WindowState>,
+    materials: Res<Materials>,
+    sounds: Res<Sounds>,
 ) {
     let mut grid: HashMap<
         (i32, i32),
@@ -126,6 +145,7 @@ pub fn handle_collision(
         for (i, (entity_1, transform_1, collision_1)) in
             entities.iter().enumerate()
         {
+            let mut updated = false;
             let f1 = (
                 transform_1.velocity,
                 transform_1.position,
@@ -154,6 +174,7 @@ pub fn handle_collision(
                 if p1.distance_squared(p2) > (r1 + r2) * (r1 + r2) {
                     continue;
                 }
+                updated = true;
                 let dp = p2 - p1;
                 let (nv1, nv2) =
                     get_collision_velocities(v1, v2, m1, m2, dp.to_angle());
@@ -165,22 +186,41 @@ pub fn handle_collision(
                 (p1, p2) = (p1 + nudge / 2., p2 - nudge / 2.);
                 updated_entities.insert(*entity_2, (v2, p2, e2));
             }
-            updated_entities.insert(*entity_1, (v1, p1, e1));
+            if updated {
+                updated_entities.insert(*entity_1, (v1, p1, e1));
+            }
         }
     }
+    let mut played = false;
     for (entity, (velocity, position, energy)) in updated_entities {
         if let Ok((_, mut transform, mut collision)) = query.get_mut(entity) {
             transform.velocity = velocity;
             transform.position = position;
             collision.energy = energy
         }
+        if let Ok((mut collision, mut material)) =
+            collision_query.get_mut(entity)
+        {
+            if collision.timer.is_finished() {
+                collision.material = Some(material.0.clone());
+                material.0 = materials.collision();
+                if !played && sounds.now_playing < 2 {
+                    commands.spawn((
+                        AudioPlayer::new(sounds.pop.clone()),
+                        PlaybackSettings::DESPAWN,
+                    ));
+                    played = true;
+                }
+            }
+            collision.timer.reset();
+        }
     }
 }
 pub fn handle_edge_collision(
-    query: Query<(&mut LocalTransform, &mut Collision)>,
+    query: Query<(&mut LocalTransform, &Collision)>,
     window: Res<WindowState>,
 ) {
-    for (mut transform, mut collision) in query {
+    for (mut transform, collision) in query {
         let mut new_velocity = transform.velocity;
         if transform.position.x + collision.radius > window.width / 2. {
             new_velocity.x = -new_velocity.x.abs();
@@ -198,10 +238,7 @@ pub fn handle_edge_collision(
             new_velocity.y = new_velocity.y.abs();
             transform.position.y = -window.height / 2. + collision.radius;
         }
-        collision.energy += (new_velocity - transform.velocity)
-            .length_squared()
-            * collision.mass;
-        transform.velocity = new_velocity
+        transform.velocity = new_velocity;
     }
 }
 pub fn handle_fps_count(
@@ -219,14 +256,16 @@ pub fn handle_fps_count(
 pub fn handle_ttl(
     mut commands: Commands,
     mut query: Query<(Entity, &mut TTL)>,
+    mut transform_query: Query<&mut LocalTransform>,
     time: Res<Time>,
 ) {
     for (entity, mut timer) in &mut query {
         if timer.tick(time.delta()).just_finished() {
-            let last_duration = timer.0.duration().as_secs_f64();
-            timer.set_duration(Duration::from_secs_f64(last_duration * 0.99));
-            timer.reset();
             commands.entity(entity).despawn();
+        }
+        if let Ok(mut transform) = transform_query.get_mut(entity) {
+            transform.scale =
+                Vec2::ONE * (timer.fraction_remaining() + 0.5) / 1.5;
         }
     }
 }
@@ -241,4 +280,61 @@ pub fn handle_energy(
     for mut energy_display in &mut display_query {
         energy_display.0 = format!("Energy: {}", (sum / 1_000_000.) as i32);
     }
+}
+pub fn handle_collision_time(
+    query: Query<(&mut CollisionTimer, &mut MeshMaterial2d<ColorMaterial>)>,
+    time: Res<Time>,
+) {
+    for (mut collision, mut material) in query {
+        if collision.timer.tick(time.delta()).just_finished() {
+            if let Some(cmaterial) = &collision.material {
+                material.0 = cmaterial.clone();
+            }
+            collision.material = None;
+        }
+    }
+}
+pub fn handle_health(
+    mut commands: Commands,
+    mut query: Query<(Entity, &Collision, &Health)>,
+    transform_query: Query<&LocalTransform>,
+    mut rng: ResMut<Rng>,
+    meshes: Res<Meshes>,
+    materials: Res<Materials>,
+    sounds: Res<Sounds>,
+) {
+    let mut played = false;
+    for (entity, collision, health) in &mut query {
+        if collision.energy > health.health * 1_000_000. {
+            commands.entity(entity).despawn();
+            if !played && sounds.now_playing < 2 {
+                commands.spawn((
+                    AudioPlayer::new(sounds.click.clone()),
+                    PlaybackSettings::DESPAWN,
+                ));
+                played = true;
+            }
+            if let Ok(transform) = transform_query.get(entity) {
+                for _ in 0..5 {
+                    let angle = rng.random_to(TAU);
+                    let v = Vec2::from_angle(angle) * 100.;
+                    commands.spawn((
+                        TTL(Timer::from_seconds(0.2, TimerMode::Once)),
+                        Mesh2d(meshes.projectile()),
+                        MeshMaterial2d(materials.collision()),
+                        transform.with_velocity(v.x, v.y),
+                        Transform::default(),
+                        Collision::new(1., CollisionLayer::Projectile, 40.),
+                        CollisionTimer::new(0.1),
+                    ));
+                }
+            }
+        }
+    }
+}
+pub fn handle_play_limit(
+    query: Query<&AudioPlayer>,
+    mut sounds: ResMut<Sounds>,
+) {
+    sounds.now_playing = query.count();
 }

@@ -1,25 +1,24 @@
 use bevy::prelude::*;
 
 use crate::{
-    components::{Collision, CollisionLayer, LocalTransform},
+    components::{
+        Collision, CollisionLayer, CollisionTimer, Health, LocalTransform,
+    },
     enemies::components::Enemy,
-    resources::{Rng, WindowState},
+    resources::{Materials, Meshes, Rng, WindowState},
 };
 pub fn spawn_bulk(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    meshes: Res<Meshes>,
+    materials: Res<Materials>,
     window: Res<WindowState>,
     mut rng: ResMut<Rng>,
 ) {
-    let mesh = meshes.add(Circle::new(2.0));
-    let color = Color::hsl(0. as f32 as f32, 0.75, 0.7);
-    let material = materials.add(color);
     for _ in 0..1000 {
         commands.spawn((
             Enemy { velocity: 40. },
-            Mesh2d(mesh.clone()),
-            MeshMaterial2d(material.clone()),
+            Mesh2d(meshes.enemy()),
+            MeshMaterial2d(materials.enemy()),
             LocalTransform::from_xyz(
                 rng.random_to(window.width) - window.width / 2.,
                 rng.random_to(window.height) - window.height / 2.,
@@ -28,24 +27,23 @@ pub fn spawn_bulk(
             .with_velocity(rng.random_to(20.) - 10., rng.random_to(20.) - 10.),
             Transform::default(),
             Collision::new(2., CollisionLayer::Enemy, 100.),
+            CollisionTimer::new(0.1),
+            Health { health: 5. },
         ));
     }
 }
 
 pub fn spawn_enemy(
     commands: &mut Commands,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<ColorMaterial>,
+    meshes: &Meshes,
+    materials: &Materials,
     window: &WindowState,
     rng: &mut Rng,
 ) {
-    let mesh = meshes.add(Circle::new(2.0));
-    let color = Color::hsl(0. as f32 as f32, 0.75, 0.7);
-    let material = materials.add(color);
     commands.spawn((
         Enemy { velocity: 40. },
-        Mesh2d(mesh.clone()),
-        MeshMaterial2d(material.clone()),
+        Mesh2d(meshes.enemy()),
+        MeshMaterial2d(materials.enemy()),
         LocalTransform::from_xyz(
             rng.random_to(window.width) - window.width / 2.,
             rng.random_to(window.height) - window.height / 2.,
@@ -54,5 +52,7 @@ pub fn spawn_enemy(
         .with_velocity(rng.random_to(20.) - 10., rng.random_to(20.) - 10.),
         Transform::default(),
         Collision::new(2., CollisionLayer::Enemy, 100.),
+        CollisionTimer::new(0.1),
+        Health { health: 5. },
     ));
 }

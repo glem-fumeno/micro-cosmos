@@ -9,14 +9,14 @@ use crate::{
         entities::spawn_enemy,
     },
     player::components::Player,
-    resources::{Rng, WindowState},
+    resources::{Materials, Meshes, Rng, WindowState},
 };
 pub fn enemy_timer_spawn(
     mut query: Query<&mut SpawnTimer>,
     time: Res<Time>,
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut meshes: Res<Meshes>,
+    mut materials: Res<Materials>,
     window: Res<WindowState>,
     mut rng: ResMut<Rng>,
 ) {

@@ -3,44 +3,40 @@ use std::f32::consts::TAU;
 use bevy::prelude::*;
 
 use crate::{
-    components::{Collision, CollisionLayer, LocalTransform},
+    components::{Collision, CollisionLayer, CollisionTimer, LocalTransform},
     player::components::{Player, PlayerMesh},
+    resources::{Materials, Meshes},
 };
 
 pub fn spawn_player(
     commands: &mut Commands,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<ColorMaterial>,
+    meshes: &Meshes,
+    materials: &Materials,
     velocity: f32,
     cooldown: f32,
     attack_cooldown: f32,
 ) {
-    let cone = meshes.add(CircularSector::new(50.0, TAU / 12.));
-    let player = meshes.add(Circle::new(4.0));
-    let color = Color::hsl(60. as f32 as f32, 0.15, 0.7);
-    let opaque_material = materials.add(color);
-    let transparent_material = materials.add(color.with_alpha(0.3));
     let mesh_entity = commands
         .spawn((
             PlayerMesh { scale: 1. },
-            Mesh2d(cone.clone()),
-            MeshMaterial2d(transparent_material.clone()),
+            Mesh2d(meshes.player_cone()),
+            MeshMaterial2d(materials.player_cone()),
             Transform::default(),
         ))
         .id();
     let cooldown_entity = commands
         .spawn((
             PlayerMesh { scale: 1. },
-            Mesh2d(cone.clone()),
-            MeshMaterial2d(transparent_material.clone()),
+            Mesh2d(meshes.player_cone()),
+            MeshMaterial2d(materials.player_cone()),
             Transform::default(),
         ))
         .id();
     let attack_entity = commands
         .spawn((
             PlayerMesh { scale: 0. },
-            Mesh2d(cone.clone()),
-            MeshMaterial2d(opaque_material.clone()),
+            Mesh2d(meshes.player_cone()),
+            MeshMaterial2d(materials.player()),
             Transform::default(),
         ))
         .id();
@@ -58,8 +54,9 @@ pub fn spawn_player(
         },
         Transform::default(),
         LocalTransform::from_xyz(0., 0., 1.),
-        Mesh2d(player.clone()),
-        MeshMaterial2d(opaque_material.clone()),
+        Mesh2d(meshes.player()),
+        MeshMaterial2d(materials.player()),
         Collision::new(4., CollisionLayer::Player, 400.),
+        CollisionTimer::new(0.1),
     ));
 }

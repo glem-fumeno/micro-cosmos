@@ -6,7 +6,7 @@ use crate::{
     components::LocalTransform,
     player::components::{Player, PlayerMesh},
     projectiles::entities::spawn_projectiles,
-    resources::WindowState,
+    resources::{Materials, Meshes, WindowState},
 };
 pub fn player_move(
     mut query: Query<(&Player, &mut LocalTransform)>,
@@ -47,8 +47,8 @@ pub fn player_attack(
     mut query: Query<(&LocalTransform, &mut Player)>,
     input: Res<ButtonInput<MouseButton>>,
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    meshes: Res<Meshes>,
+    materials: Res<Materials>,
 ) {
     if !input.pressed(MouseButton::Left) {
         return;
@@ -58,8 +58,8 @@ pub fn player_attack(
             player.current_cooldown = player.cooldown;
             spawn_projectiles(
                 &mut commands,
-                &mut meshes,
-                &mut materials,
+                &meshes,
+                &materials,
                 *transform,
                 player.projectiles,
                 player.spread,

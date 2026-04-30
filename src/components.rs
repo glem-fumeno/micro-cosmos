@@ -72,6 +72,24 @@ impl Collision {
         }
     }
 }
+
+#[derive(Component)]
+pub struct CollisionTimer {
+    pub material: Option<Handle<ColorMaterial>>,
+    pub timer: Timer,
+}
+
+impl CollisionTimer {
+    pub fn new(duration: f32) -> Self {
+        let mut timer = Timer::from_seconds(duration, TimerMode::Once);
+        timer.finish();
+        Self {
+            material: None,
+            timer,
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct FPSCounter;
 
@@ -80,3 +98,8 @@ pub struct TTL(pub Timer);
 
 #[derive(Component)]
 pub struct EnergyDisplay;
+
+#[derive(Component)]
+pub struct Health {
+    pub health: f32,
+}
