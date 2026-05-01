@@ -9,14 +9,13 @@ use crate::{
         entities::spawn_enemy,
     },
     player::components::Player,
-    resources::{Materials, Meshes, Rng, WindowState},
+    resources::{Rng, Textures, WindowState},
 };
 pub fn enemy_timer_spawn(
     mut query: Query<&mut SpawnTimer>,
     time: Res<Time>,
     mut commands: Commands,
-    mut meshes: Res<Meshes>,
-    mut materials: Res<Materials>,
+    textures: Res<Textures>,
     window: Res<WindowState>,
     mut rng: ResMut<Rng>,
 ) {
@@ -25,13 +24,7 @@ pub fn enemy_timer_spawn(
             let last_duration = timer.0.duration().as_secs_f64();
             timer.set_duration(Duration::from_secs_f64(last_duration * 0.99));
             timer.reset();
-            spawn_enemy(
-                &mut commands,
-                &mut meshes,
-                &mut materials,
-                &window,
-                &mut rng,
-            );
+            spawn_enemy(&mut commands, &window, &textures, &mut rng);
         }
     }
 }

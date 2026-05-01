@@ -20,6 +20,10 @@ impl LocalTransform {
             zindex: z,
         }
     }
+    pub fn with_angle(mut self, angle: f32) -> Self {
+        self.angle = angle;
+        self
+    }
     pub fn with_velocity(mut self, x: f32, y: f32) -> Self {
         self.velocity.x = x;
         self.velocity.y = y;
@@ -75,7 +79,7 @@ impl Collision {
 
 #[derive(Component)]
 pub struct CollisionTimer {
-    pub material: Option<Handle<ColorMaterial>>,
+    pub texture: Option<Handle<Image>>,
     pub timer: Timer,
 }
 
@@ -84,7 +88,7 @@ impl CollisionTimer {
         let mut timer = Timer::from_seconds(duration, TimerMode::Once);
         timer.finish();
         Self {
-            material: None,
+            texture: None,
             timer,
         }
     }
@@ -95,9 +99,6 @@ pub struct FPSCounter;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct TTL(pub Timer);
-
-#[derive(Component)]
-pub struct EnergyDisplay;
 
 #[derive(Component)]
 pub struct Health {

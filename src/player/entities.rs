@@ -5,13 +5,14 @@ use bevy::prelude::*;
 use crate::{
     components::{Collision, CollisionLayer, CollisionTimer, LocalTransform},
     player::components::{Player, PlayerMesh},
-    resources::{Materials, Meshes},
+    resources::{Materials, Meshes, Textures},
 };
 
 pub fn spawn_player(
     commands: &mut Commands,
     meshes: &Meshes,
     materials: &Materials,
+    textures: &Textures,
     velocity: f32,
     cooldown: f32,
     attack_cooldown: f32,
@@ -19,24 +20,24 @@ pub fn spawn_player(
     let mesh_entity = commands
         .spawn((
             PlayerMesh { scale: 1. },
-            Mesh2d(meshes.player_cone()),
-            MeshMaterial2d(materials.player_cone()),
+            Mesh2d(meshes.player_cone.clone()),
+            MeshMaterial2d(materials.player_cone.clone()),
             Transform::default(),
         ))
         .id();
     let cooldown_entity = commands
         .spawn((
             PlayerMesh { scale: 1. },
-            Mesh2d(meshes.player_cone()),
-            MeshMaterial2d(materials.player_cone()),
+            Mesh2d(meshes.player_cone.clone()),
+            MeshMaterial2d(materials.player_cone.clone()),
             Transform::default(),
         ))
         .id();
     let attack_entity = commands
         .spawn((
             PlayerMesh { scale: 0. },
-            Mesh2d(meshes.player_cone()),
-            MeshMaterial2d(materials.player()),
+            Mesh2d(meshes.player_cone.clone()),
+            MeshMaterial2d(materials.player.clone()),
             Transform::default(),
         ))
         .id();
@@ -54,8 +55,7 @@ pub fn spawn_player(
         },
         Transform::default(),
         LocalTransform::from_xyz(0., 0., 1.),
-        Mesh2d(meshes.player()),
-        MeshMaterial2d(materials.player()),
+        Sprite::from_image(textures.player.clone()),
         Collision::new(4., CollisionLayer::Player, 400.),
         CollisionTimer::new(0.1),
     ));

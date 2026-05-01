@@ -7,14 +7,13 @@ use crate::{
         Collision, CollisionLayer, CollisionTimer, LocalTransform, TTL,
     },
     projectiles::components::Projectile,
-    resources::{Materials, Meshes},
+    resources::Textures,
 };
 
 pub fn spawn_projectiles(
     commands: &mut Commands,
-    meshes: &Meshes,
-    materials: &Materials,
-    transform: LocalTransform,
+    textures: &Textures,
+    transform: &LocalTransform,
     count: i32,
     spread: f32,
 ) {
@@ -25,8 +24,7 @@ pub fn spawn_projectiles(
         commands.spawn((
             Projectile { velocity: 100. },
             TTL(Timer::from_seconds(0.5, TimerMode::Once)),
-            Mesh2d(meshes.projectile()),
-            MeshMaterial2d(materials.projectile().clone()),
+            Sprite::from_image(textures.projectile.clone()),
             transform.with_velocity(v.x, v.y),
             Transform::default(),
             Collision::new(1., CollisionLayer::Projectile, 40.),

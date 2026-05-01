@@ -38,77 +38,52 @@ impl Default for Rng {
 }
 impl Rng {
     pub fn random_to(&mut self, value: f32) -> f32 {
-        self.rng.random_range((0.)..value)
+        self.rng.random_range(0.0..=value)
+    }
+    pub fn randomi_to(&mut self, value: i32) -> i32 {
+        self.rng.random_range(0..=value)
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct Materials {
-    collision: Option<Handle<ColorMaterial>>,
-    player: Option<Handle<ColorMaterial>>,
-    player_cone: Option<Handle<ColorMaterial>>,
-    enemy: Option<Handle<ColorMaterial>>,
-    projectile: Option<Handle<ColorMaterial>>,
-    background: Option<Handle<ColorMaterial>>,
+    pub collision: Handle<ColorMaterial>,
+    pub player: Handle<ColorMaterial>,
+    pub player_cone: Handle<ColorMaterial>,
+    pub enemy: Handle<ColorMaterial>,
+    pub projectile: Handle<ColorMaterial>,
+    pub background: Handle<ColorMaterial>,
 }
-
-impl Materials {
-    pub fn init(&mut self, materials: &mut Assets<ColorMaterial>) {
-        self.collision = Some(materials.add(Color::oklch(0.9, 0.01, 30.)));
-        self.player = Some(materials.add(Color::oklch(0.75, 0.1, 130.)));
-        self.player_cone =
-            Some(materials.add(Color::oklcha(0.75, 0.1, 130., 0.1)));
-        self.enemy = Some(materials.add(Color::oklch(0.75, 0.1, 30.)));
-        self.projectile = Some(materials.add(Color::oklch(0.75, 0.1, 220.)));
-        self.background = Some(materials.add(Color::oklch(0.25, 0.01, 30.)));
-    }
-    pub fn collision(&self) -> Handle<ColorMaterial> {
-        self.collision.as_ref().unwrap().clone()
-    }
-    pub fn player(&self) -> Handle<ColorMaterial> {
-        self.player.as_ref().unwrap().clone()
-    }
-    pub fn player_cone(&self) -> Handle<ColorMaterial> {
-        self.player_cone.as_ref().unwrap().clone()
-    }
-    pub fn enemy(&self) -> Handle<ColorMaterial> {
-        self.enemy.as_ref().unwrap().clone()
-    }
-    pub fn projectile(&self) -> Handle<ColorMaterial> {
-        self.projectile.as_ref().unwrap().clone()
-    }
-    pub fn background(&self) -> Handle<ColorMaterial> {
-        self.background.as_ref().unwrap().clone()
+impl FromWorld for Materials {
+    fn from_world(world: &mut World) -> Self {
+        let mut materials = world.resource_mut::<Assets<ColorMaterial>>();
+        Self {
+            collision: materials.add(Color::oklch(0.9, 0.01, 30.)),
+            player: materials.add(Color::oklch(0.75, 0.1, 130.)),
+            player_cone: materials.add(Color::oklcha(0.75, 0.1, 130., 0.1)),
+            enemy: materials.add(Color::oklch(0.75, 0.1, 30.)),
+            projectile: materials.add(Color::oklch(0.75, 0.1, 220.)),
+            background: materials.add(Color::oklch(0.25, 0.01, 30.)),
+        }
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct Meshes {
-    projectile: Option<Handle<Mesh>>,
-    player: Option<Handle<Mesh>>,
-    player_cone: Option<Handle<Mesh>>,
-    enemy: Option<Handle<Mesh>>,
+    pub projectile: Handle<Mesh>,
+    pub player: Handle<Mesh>,
+    pub player_cone: Handle<Mesh>,
+    pub enemy: Handle<Mesh>,
 }
-
-impl Meshes {
-    pub fn init(&mut self, meshes: &mut Assets<Mesh>) {
-        self.player = Some(meshes.add(Circle::new(4.0)));
-        self.player_cone =
-            Some(meshes.add(CircularSector::new(50.0, TAU / 12.)));
-        self.enemy = Some(meshes.add(Circle::new(2.0)));
-        self.projectile = Some(meshes.add(Circle::new(1.0)));
-    }
-    pub fn player(&self) -> Handle<Mesh> {
-        self.player.as_ref().unwrap().clone()
-    }
-    pub fn player_cone(&self) -> Handle<Mesh> {
-        self.player_cone.as_ref().unwrap().clone()
-    }
-    pub fn enemy(&self) -> Handle<Mesh> {
-        self.enemy.as_ref().unwrap().clone()
-    }
-    pub fn projectile(&self) -> Handle<Mesh> {
-        self.projectile.as_ref().unwrap().clone()
+impl FromWorld for Meshes {
+    fn from_world(world: &mut World) -> Self {
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        Self {
+            player: meshes.add(Circle::new(4.0)),
+            player_cone: meshes.add(CircularSector::new(50.0, TAU / 12.)),
+            enemy: meshes.add(Circle::new(2.0)),
+            projectile: meshes.add(Circle::new(1.0)),
+        }
     }
 }
 
@@ -126,6 +101,96 @@ impl FromWorld for Sounds {
             click: asset_server.load("click.ogg"),
             pop: asset_server.load("pop.ogg"),
             now_playing: 0,
+        }
+    }
+}
+
+#[derive(Resource)]
+pub struct Textures {
+    pub enemy_01: Handle<Image>,
+    pub enemy_02: Handle<Image>,
+    pub enemy_03: Handle<Image>,
+    pub enemy_04: Handle<Image>,
+    pub enemy_05: Handle<Image>,
+    pub enemy_06: Handle<Image>,
+    pub enemy_07: Handle<Image>,
+    pub enemy_08: Handle<Image>,
+    pub enemy_09: Handle<Image>,
+    pub enemy_10: Handle<Image>,
+    pub enemy_01d: Handle<Image>,
+    pub enemy_02d: Handle<Image>,
+    pub enemy_03d: Handle<Image>,
+    pub enemy_04d: Handle<Image>,
+    pub enemy_05d: Handle<Image>,
+    pub enemy_06d: Handle<Image>,
+    pub enemy_07d: Handle<Image>,
+    pub enemy_08d: Handle<Image>,
+    pub enemy_09d: Handle<Image>,
+    pub enemy_10d: Handle<Image>,
+    pub player: Handle<Image>,
+    pub projectile: Handle<Image>,
+    pub particle: Handle<Image>,
+}
+impl Textures {
+    pub fn enemy_from_index(&self, index: i32) -> Option<Handle<Image>> {
+        Some(match index {
+            1 => self.enemy_01.clone(),
+            2 => self.enemy_02.clone(),
+            3 => self.enemy_03.clone(),
+            4 => self.enemy_04.clone(),
+            5 => self.enemy_05.clone(),
+            6 => self.enemy_06.clone(),
+            7 => self.enemy_07.clone(),
+            8 => self.enemy_08.clone(),
+            9 => self.enemy_09.clone(),
+            10 => self.enemy_10.clone(),
+            _ => None?,
+        })
+    }
+    pub fn enemyd_from_index(&self, index: i32) -> Option<Handle<Image>> {
+        Some(match index {
+            1 => self.enemy_01d.clone(),
+            2 => self.enemy_02d.clone(),
+            3 => self.enemy_03d.clone(),
+            4 => self.enemy_04d.clone(),
+            5 => self.enemy_05d.clone(),
+            6 => self.enemy_06d.clone(),
+            7 => self.enemy_07d.clone(),
+            8 => self.enemy_08d.clone(),
+            9 => self.enemy_09d.clone(),
+            10 => self.enemy_10d.clone(),
+            _ => None?,
+        })
+    }
+}
+
+impl FromWorld for Textures {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.resource::<AssetServer>();
+        Self {
+            enemy_01: asset_server.load("enemies/01.png"),
+            enemy_02: asset_server.load("enemies/02.png"),
+            enemy_03: asset_server.load("enemies/03.png"),
+            enemy_04: asset_server.load("enemies/04.png"),
+            enemy_05: asset_server.load("enemies/05.png"),
+            enemy_06: asset_server.load("enemies/06.png"),
+            enemy_07: asset_server.load("enemies/07.png"),
+            enemy_08: asset_server.load("enemies/08.png"),
+            enemy_09: asset_server.load("enemies/09.png"),
+            enemy_10: asset_server.load("enemies/10.png"),
+            enemy_01d: asset_server.load("enemies/d01.png"),
+            enemy_02d: asset_server.load("enemies/d02.png"),
+            enemy_03d: asset_server.load("enemies/d03.png"),
+            enemy_04d: asset_server.load("enemies/d04.png"),
+            enemy_05d: asset_server.load("enemies/d05.png"),
+            enemy_06d: asset_server.load("enemies/d06.png"),
+            enemy_07d: asset_server.load("enemies/d07.png"),
+            enemy_08d: asset_server.load("enemies/d08.png"),
+            enemy_09d: asset_server.load("enemies/d09.png"),
+            enemy_10d: asset_server.load("enemies/d10.png"),
+            player: asset_server.load("player.png"),
+            projectile: asset_server.load("projectile.png"),
+            particle: asset_server.load("particle.png"),
         }
     }
 }
