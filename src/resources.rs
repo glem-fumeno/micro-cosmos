@@ -44,6 +44,44 @@ impl Rng {
         self.rng.random_range(0..=value)
     }
 }
+#[derive(Resource, Clone, Copy)]
+pub struct Colors {
+    pub red: Color,
+    pub green: Color,
+    pub blue: Color,
+    pub background: Color,
+    pub surface: Color,
+    pub hover: Color,
+    pub click: Color,
+    pub foreground: Color,
+}
+impl Default for Colors {
+    fn default() -> Self {
+        return Self {
+            red: Color::oklch(0.75, 0.1, 30.),
+            green: Color::oklch(0.75, 0.1, 130.),
+            blue: Color::oklch(0.75, 0.1, 220.),
+            background: Color::oklch(0.25, 0.01, 30.),
+            surface: Color::oklch(0.35, 0.01, 30.),
+            hover: Color::oklch(0.45, 0.01, 30.),
+            click: Color::oklch(0.55, 0.01, 30.),
+            foreground: Color::oklch(0.9, 0.01, 30.),
+        };
+    }
+}
+
+#[derive(Resource)]
+pub struct Fonts {
+    pub lexend: Handle<Font>,
+}
+impl FromWorld for Fonts {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.resource::<AssetServer>();
+        Self {
+            lexend: asset_server.load("lexend.ttf").into(),
+        }
+    }
+}
 
 #[derive(Resource)]
 pub struct Materials {
@@ -56,14 +94,15 @@ pub struct Materials {
 }
 impl FromWorld for Materials {
     fn from_world(world: &mut World) -> Self {
+        let colors = *world.resource::<Colors>();
         let mut materials = world.resource_mut::<Assets<ColorMaterial>>();
         Self {
-            collision: materials.add(Color::oklch(0.9, 0.01, 30.)),
-            player: materials.add(Color::oklch(0.75, 0.1, 130.)),
-            player_cone: materials.add(Color::oklcha(0.75, 0.1, 130., 0.1)),
-            enemy: materials.add(Color::oklch(0.75, 0.1, 30.)),
-            projectile: materials.add(Color::oklch(0.75, 0.1, 220.)),
-            background: materials.add(Color::oklch(0.25, 0.01, 30.)),
+            collision: materials.add(colors.foreground),
+            player: materials.add(colors.green),
+            player_cone: materials.add(colors.green.with_alpha(0.1)),
+            enemy: materials.add(colors.red),
+            projectile: materials.add(colors.blue),
+            background: materials.add(colors.background),
         }
     }
 }

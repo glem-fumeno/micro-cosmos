@@ -3,7 +3,9 @@ use std::f32::consts::TAU;
 use bevy::prelude::*;
 
 use crate::{
-    components::{Collision, CollisionLayer, CollisionTimer, LocalTransform},
+    components::{
+        Collision, CollisionLayer, CollisionTimer, Health, LocalTransform, SceneEntity
+    },
     player::components::{Player, PlayerMesh},
     resources::{Materials, Meshes, Textures},
 };
@@ -42,6 +44,7 @@ pub fn spawn_player(
         ))
         .id();
     commands.spawn((
+        SceneEntity,
         Player {
             velocity,
             cooldown,
@@ -57,6 +60,7 @@ pub fn spawn_player(
         LocalTransform::from_xyz(0., 0., 1.),
         Sprite::from_image(textures.player.clone()),
         Collision::new(4., CollisionLayer::Player, 400.),
+        Health { health: 10. },
         CollisionTimer::new(0.1),
     ));
 }

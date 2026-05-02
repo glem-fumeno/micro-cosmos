@@ -12,20 +12,18 @@ use crate::{
     resources::{Rng, Textures, WindowState},
 };
 pub fn enemy_timer_spawn(
-    mut query: Query<&mut SpawnTimer>,
+    mut timer: Single<&mut SpawnTimer>,
     time: Res<Time>,
     mut commands: Commands,
     textures: Res<Textures>,
     window: Res<WindowState>,
     mut rng: ResMut<Rng>,
 ) {
-    for mut timer in &mut query {
-        if timer.tick(time.delta()).just_finished() {
-            let last_duration = timer.0.duration().as_secs_f64();
-            timer.set_duration(Duration::from_secs_f64(last_duration * 0.99));
-            timer.reset();
-            spawn_enemy(&mut commands, &window, &textures, &mut rng);
-        }
+    if timer.tick(time.delta()).just_finished() {
+        let last_duration = timer.0.duration().as_secs_f64();
+        timer.set_duration(Duration::from_secs_f64(last_duration * 0.99));
+        timer.reset();
+        spawn_enemy(&mut commands, &window, &textures, &mut rng);
     }
 }
 

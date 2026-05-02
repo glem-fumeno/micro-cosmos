@@ -3,6 +3,7 @@ use std::f32::consts::TAU;
 use bevy::prelude::*;
 
 use crate::{
+    app_state::AppState,
     components::LocalTransform,
     player::components::{Player, PlayerMesh},
     projectiles::entities::spawn_projectiles,
@@ -106,5 +107,14 @@ pub fn player_transform_mesh(
         *transform = player_transform
             .with_translation(player_transform.translation.with_z(3.))
             .with_scale(player_transform.scale * mesh.scale);
+    }
+}
+
+pub fn player_despawn(
+    query: Query<&Player>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    if query.iter().len() < 1 {
+        next_state.set(AppState::MainMenu);
     }
 }

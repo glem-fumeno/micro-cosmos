@@ -9,15 +9,26 @@ use bevy::{
 use crate::{
     components::{
         Collision, CollisionLayer, CollisionTimer, FPSCounter, Health,
-        LocalTransform, TTL,
+        LocalTransform, SceneEntity, TTL,
     },
     enemies::components::{Enemy, SpawnTimer},
     math::get_collision_velocities,
     player::entities::spawn_player,
     resources::{Materials, Meshes, Rng, Sounds, Textures, WindowState},
 };
+pub fn init_app(mut commands: Commands) {
+    commands.spawn(Camera2d);
+}
+pub fn deinit_scene(
+    mut commands: Commands,
+    entities: Query<Entity, With<SceneEntity>>,
+) {
+    for entity in entities {
+        commands.entity(entity).try_despawn();
+    }
+}
 
-pub fn setup(
+pub fn init_game(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials_resource: ResMut<Materials>,
@@ -25,11 +36,10 @@ pub fn setup(
     textures: Res<Textures>,
     scale: Res<WindowState>,
 ) {
-    commands.spawn(Camera2d);
-
     let background = meshes.add(Rectangle::new(scale.width, scale.height));
 
     commands.spawn((
+        SceneEntity,
         Mesh2d(background),
         MeshMaterial2d(materials_resource.background.clone()),
         Transform::default(),
@@ -44,8 +54,12 @@ pub fn setup(
         0.5,
         0.4,
     );
-    commands.spawn((SpawnTimer(Timer::from_seconds(1., TimerMode::Once)),));
     commands.spawn((
+        SceneEntity,
+        SpawnTimer(Timer::from_seconds(1., TimerMode::Once)),
+    ));
+    commands.spawn((
+        SceneEntity,
         Text::new(String::new()),
         Node {
             position_type: PositionType::Absolute,
@@ -195,6 +209,7 @@ pub fn handle_collision(
                 sprite.image = textures.enemyd_from_index(enemy.index).unwrap();
                 if !played && sounds.now_playing < 2 {
                     commands.spawn((
+                        SceneEntity,
                         AudioPlayer::new(sounds.pop.clone()),
                         PlaybackSettings::DESPAWN,
                     ));
@@ -283,6 +298,7 @@ pub fn handle_health(
             commands.entity(entity).despawn();
             if !played && sounds.now_playing < 2 {
                 commands.spawn((
+                    SceneEntity,
                     AudioPlayer::new(sounds.click.clone()),
                     PlaybackSettings::DESPAWN,
                 ));
@@ -293,6 +309,7 @@ pub fn handle_health(
                     let angle = rng.random_to(TAU);
                     let v = Vec2::from_angle(angle) * 100.;
                     commands.spawn((
+                        SceneEntity,
                         TTL(Timer::from_seconds(0.2, TimerMode::Once)),
                         Sprite::from_image(textures.particle.clone()),
                         transform.with_velocity(v.x, v.y),

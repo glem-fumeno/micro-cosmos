@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use crate::{
     components::{
         Collision, CollisionLayer, CollisionTimer, Health, LocalTransform,
+        SceneEntity,
     },
     enemies::components::Enemy,
     resources::{Rng, Textures, WindowState},
@@ -32,6 +33,7 @@ pub fn spawn_enemy(
 ) {
     let index = rng.randomi_to(9) + 1;
     commands.spawn((
+        SceneEntity,
         Enemy {
             velocity: 40.,
             index,

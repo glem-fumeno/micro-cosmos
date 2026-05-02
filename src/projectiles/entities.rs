@@ -4,7 +4,8 @@ use bevy::prelude::*;
 
 use crate::{
     components::{
-        Collision, CollisionLayer, CollisionTimer, LocalTransform, TTL,
+        Collision, CollisionLayer, CollisionTimer, LocalTransform, SceneEntity,
+        TTL,
     },
     projectiles::components::Projectile,
     resources::Textures,
@@ -22,6 +23,7 @@ pub fn spawn_projectiles(
         let angle = transform.angle - spread / 2. + delta;
         let v = Vec2::from_angle(angle + PI / 2.) * 100.;
         commands.spawn((
+            SceneEntity,
             Projectile { velocity: 100. },
             TTL(Timer::from_seconds(0.5, TimerMode::Once)),
             Sprite::from_image(textures.projectile.clone()),

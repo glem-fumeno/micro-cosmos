@@ -97,6 +97,9 @@ impl CollisionTimer {
 #[derive(Component)]
 pub struct FPSCounter;
 
+#[derive(Component)]
+pub struct SceneEntity;
+
 #[derive(Component, Deref, DerefMut)]
 pub struct TTL(pub Timer);
 
