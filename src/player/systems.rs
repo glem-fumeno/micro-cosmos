@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::{
     app_state::AppState,
-    components::LocalTransform,
+    components::{Collision, LocalTransform},
     player::components::{Player, PlayerMesh},
     projectiles::entities::spawn_projectiles,
     resources::{Textures, WindowState},
@@ -27,7 +27,7 @@ pub fn player_move(
     if input.pressed(KeyCode::KeyD) {
         velocity_vector.x += 1.;
     }
-    transform.velocity = velocity_vector * player.velocity;
+    transform.acceleration = velocity_vector * player.velocity;
 }
 
 pub fn player_rotate(
@@ -85,6 +85,17 @@ pub fn player_cooldown(
     }
 }
 
+pub fn player_health(
+    player: Single<&mut Player>,
+    collision: Single<&Collision, With<Player>>,
+    mut query_meshes: Query<&mut PlayerMesh>,
+) {
+    if let Ok(mut mesh) = query_meshes.get_mut(player.health_entity) {
+        mesh.scale =
+            ((1. - collision.energy / player.health) * 8.) as i32 as f32 / 8.;
+    }
+}
+
 pub fn player_transform_mesh(
     player: Single<&Player, With<Transform>>,
     player_transform: Single<&Transform, With<Player>>,
@@ -106,6 +117,41 @@ pub fn player_transform_mesh(
     {
         *transform = player_transform
             .with_translation(player_transform.translation.with_z(3.))
+            .with_scale(player_transform.scale * mesh.scale);
+    }
+    if let Ok((mut transform, mesh)) = query_mesh.get_mut(player.health_entity)
+    {
+        *transform = player_transform
+            .with_translation(
+                player_transform
+                    .translation
+                    .with_z(player_transform.translation.z + 2.)
+                    .with_y(
+                        player_transform.translation.y
+                            + 6. * player_transform.scale.y,
+                    ),
+            )
+            .with_rotation(Quat::from_rotation_z(0.))
+            .with_scale(
+                player_transform
+                    .scale
+                    .with_x(player_transform.scale.x * mesh.scale),
+            );
+    }
+    if let Ok((mut transform, mesh)) =
+        query_mesh.get_mut(player.health_background_entity)
+    {
+        *transform = player_transform
+            .with_translation(
+                player_transform
+                    .translation
+                    .with_z(player_transform.translation.z + 1.)
+                    .with_y(
+                        player_transform.translation.y
+                            + 6. * player_transform.scale.y,
+                    ),
+            )
+            .with_rotation(Quat::from_rotation_z(0.))
             .with_scale(player_transform.scale * mesh.scale);
     }
 }

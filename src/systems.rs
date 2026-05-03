@@ -53,6 +53,7 @@ pub fn init_game(
         50.,
         0.5,
         0.4,
+        10.,
     );
     commands.spawn((
         SceneEntity,
@@ -167,7 +168,7 @@ pub fn handle_collision(
                 let f2 = (
                     transform_2.velocity,
                     transform_2.position,
-                    collision_1.energy,
+                    collision_2.energy,
                 );
                 let (v2, p2, e2) =
                     updated_entities.get(entity_2).unwrap_or(&f2);
@@ -181,8 +182,8 @@ pub fn handle_collision(
                 let dp = p2 - p1;
                 let (nv1, nv2) =
                     get_collision_velocities(v1, v2, m1, m2, dp.to_angle());
-                e1 += (nv1 - v1).length_squared() * m1;
-                e2 += (nv2 - v2).length_squared() * m2;
+                e1 += (nv1 - v1).length_squared() * m1 / 1_000_000.;
+                e2 += (nv2 - v2).length_squared() * m2 / 1_000_000.;
                 v1 = nv1;
                 v2 = nv2;
                 let nudge = dp.normalize() * (p1.distance(p2) - r1 - r2);
@@ -294,7 +295,7 @@ pub fn handle_health(
 ) {
     let mut played = false;
     for (entity, collision, health) in &mut query {
-        if collision.energy > health.health * 1_000_000. {
+        if collision.energy > health.health {
             commands.entity(entity).despawn();
             if !played && sounds.now_playing < 2 {
                 commands.spawn((

@@ -88,6 +88,7 @@ pub struct Materials {
     pub collision: Handle<ColorMaterial>,
     pub player: Handle<ColorMaterial>,
     pub player_cone: Handle<ColorMaterial>,
+    pub health: Handle<ColorMaterial>,
     pub enemy: Handle<ColorMaterial>,
     pub projectile: Handle<ColorMaterial>,
     pub background: Handle<ColorMaterial>,
@@ -100,6 +101,7 @@ impl FromWorld for Materials {
             collision: materials.add(colors.foreground),
             player: materials.add(colors.green),
             player_cone: materials.add(colors.green.with_alpha(0.1)),
+            health: materials.add(colors.hover),
             enemy: materials.add(colors.red),
             projectile: materials.add(colors.blue),
             background: materials.add(colors.background),
@@ -112,6 +114,7 @@ pub struct Meshes {
     pub projectile: Handle<Mesh>,
     pub player: Handle<Mesh>,
     pub player_cone: Handle<Mesh>,
+    pub health: Handle<Mesh>,
     pub enemy: Handle<Mesh>,
 }
 impl FromWorld for Meshes {
@@ -121,6 +124,7 @@ impl FromWorld for Meshes {
             player: meshes.add(Circle::new(4.0)),
             player_cone: meshes.add(CircularSector::new(50.0, TAU / 12.)),
             enemy: meshes.add(Circle::new(2.0)),
+            health: meshes.add(Rectangle::new(8.0, 1.0)),
             projectile: meshes.add(Circle::new(1.0)),
         }
     }

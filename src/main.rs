@@ -10,8 +10,8 @@ use crate::{
     enemies::{entities::spawn_bulk, systems::enemy_timer_spawn},
     menu::{handle_button, handle_start_button, init_menu},
     player::systems::{
-        player_attack, player_cooldown, player_despawn, player_move,
-        player_rotate, player_transform_mesh,
+        player_attack, player_cooldown, player_despawn, player_health,
+        player_move, player_rotate, player_transform_mesh,
     },
     resources::{
         Colors, Fonts, Materials, Meshes, Rng, Sounds, Textures, WindowState,
@@ -75,6 +75,7 @@ fn main() {
         .add_systems(Update, player_rotate)
         .add_systems(Update, player_attack)
         .add_systems(Update, player_cooldown)
+        .add_systems(Update, player_health)
         .add_systems(Update, player_despawn.run_if(in_state(AppState::Game)))
         .add_systems(Update, enemy_timer_spawn)
         .add_systems(Update, spawn_bulk)
